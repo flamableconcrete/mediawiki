@@ -53,6 +53,8 @@ class MediaWiki(object):
         rate_limit_wait=timedelta(milliseconds=50),
         cat_prefix="Category",
         user_agent=None,
+        username=None,
+        password=None
     ):
         """ Init Function """
         self._version = VERSION
@@ -89,6 +91,7 @@ class MediaWiki(object):
         # call helper functions to get everything set up
         self._reset_session()
         try:
+            self.login(username, password)
             self._get_site_info()
         except MediaWikiException:
             raise MediaWikiAPIURLError(url)
@@ -284,15 +287,31 @@ class MediaWiki(object):
                 see https://www.mediawiki.org/wiki/API:Login for more \
                 information """
         # get login token
+        #params = {
+        #    "action": "query",
+        #    "meta": "tokens",
+        #    "type": "login",
+        #    "format": "json",
+        #}
+        #token_res = self._get_response(params)
+        #if "query" in token_res and "tokens" in token_res["query"]:
+        #    token = token_res["query"]["tokens"]["logintoken"]
+
+        if not username:
+            raise MediaWikiLoginError('Must specify username to login')
+        if not password:
+            raise MediaWikiLoginError('Must specify password to login')
+
+
         params = {
-            "action": "query",
-            "meta": "tokens",
-            "type": "login",
-            "format": "json",
+            'action': "login",
+            'lgname': username,
+            'lgpassword': password,
+            'format': 'json'
         }
-        token_res = self._get_response(params)
-        if "query" in token_res and "tokens" in token_res["query"]:
-            token = token_res["query"]["tokens"]["logintoken"]
+        token_res = self._post_response(params)
+        if "login" in token_res:
+            token = token_res['login']['token']
 
         params = {
             "action": "login",
